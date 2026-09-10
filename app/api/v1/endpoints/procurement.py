@@ -7,7 +7,7 @@ from sqlalchemy.sql import func
 
 from app.core.database import get_db
 from app.api.deps import get_current_user
-from app.models.rbac import User
+from app.models.auth import User
 from app.models.catalog import ProductVariant
 from app.models.crm import Supplier
 from app.models.inventory import Inventory, StockTransaction
@@ -153,3 +153,4 @@ def create_grn(
     db.commit()
     db.refresh(grn)
     return APIResponse(data=grn)
+

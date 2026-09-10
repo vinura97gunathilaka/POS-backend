@@ -1,7 +1,7 @@
 from typing import Optional
 from decimal import Decimal
 from pydantic import BaseModel, EmailStr
-from app.schemas.rbac import AuditBase
+from app.schemas.auth import AuditBase
 
 # --- Customer ---
 class CustomerBase(BaseModel):
@@ -82,3 +82,4 @@ class LoyaltyTransactionBase(BaseModel):
 class LoyaltyTransactionOut(LoyaltyTransactionBase, AuditBase):
     company_id: int
     customer_id: int
+

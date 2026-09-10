@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict, Any
 from decimal import Decimal
 from pydantic import BaseModel
-from app.schemas.rbac import AuditBase
+from app.schemas.auth import AuditBase
 
 # --- Category ---
 class CategoryBase(BaseModel):
@@ -133,3 +133,4 @@ class ProductOut(ProductBase, AuditBase):
     company_id: int
     category_id: Optional[int] = None
     variants: List[ProductVariantOut] = []
+

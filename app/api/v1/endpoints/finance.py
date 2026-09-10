@@ -7,7 +7,7 @@ from sqlalchemy.sql import func
 
 from app.core.database import get_db
 from app.api.deps import get_current_user
-from app.models.rbac import User
+from app.models.auth import User
 from app.models.sales import Payment, Sale
 from app.models.finance import ExpenseCategory, Expense, BankAccount, CashDrawer, Shift
 from app.schemas.finance import (
@@ -250,3 +250,4 @@ def create_cash_drawer(
     db.commit()
     db.refresh(drawer)
     return APIResponse(data=drawer)
+

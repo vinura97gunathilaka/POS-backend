@@ -5,7 +5,7 @@ import math
 
 from app.core.database import get_db
 from app.api.deps import get_current_user
-from app.models.rbac import User
+from app.models.auth import User
 from app.models.logging import Notification, AuditLog, NotificationDispatch
 from app.schemas.logging import NotificationOut, AuditLogOut, NotificationDispatchOut
 from app.schemas.response import APIResponse
@@ -104,4 +104,5 @@ def list_notification_dispatches(
         dispatches = query.all()
         
     return APIResponse(data=dispatches)
+
 

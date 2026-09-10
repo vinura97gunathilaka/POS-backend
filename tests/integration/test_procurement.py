@@ -8,7 +8,8 @@ from app.main import app
 from app.models import Base
 from app.core.database import get_db
 from app.core.security import get_password_hash
-from app.models.rbac import User, Company, Branch
+from app.models.auth import User
+from app.models.organization import Company, Branch
 from app.models.catalog import Category, Product, ProductVariant
 from app.models.inventory import Inventory, StockTransaction
 from app.models.crm import Supplier
@@ -212,3 +213,4 @@ def test_record_grn_updates_stock_and_average_cost(client, seed_data):
     assert txn.reference_type == "grn"
 
     db.close()
+

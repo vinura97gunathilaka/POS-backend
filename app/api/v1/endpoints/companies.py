@@ -4,8 +4,9 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.api.deps import get_current_user
-from app.models.rbac import Company, User
-from app.schemas.rbac import CompanyCreate, CompanyUpdate, CompanyOut
+from app.models.auth import User
+from app.models.organization import Company
+from app.schemas.organization import CompanyCreate, CompanyUpdate, CompanyOut
 from app.schemas.response import APIResponse
 
 router = APIRouter()
@@ -80,3 +81,4 @@ def update_company(
     db.commit()
     db.refresh(company)
     return APIResponse(data=company)
+

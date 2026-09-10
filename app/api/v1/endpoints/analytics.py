@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.api.deps import get_current_user
-from app.models.rbac import User, Branch
+from app.models.auth import User
+from app.models.organization import Branch
 from app.models.catalog import ProductVariant, Product, Category
 from app.models.sales import Sale, SaleItem, Payment, CSATFeedback
 from app.schemas.response import APIResponse
@@ -399,4 +400,5 @@ def list_csat_feedbacks(
         }
     }
     return APIResponse(data=data)
+
 

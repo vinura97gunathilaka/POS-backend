@@ -8,7 +8,8 @@ from app.models import Base
 from app.core.database import get_db
 
 from app.core.security import get_password_hash
-from app.models.rbac import User, Company, Branch
+from app.models.auth import User
+from app.models.organization import Company, Branch
 from app.models.finance import CashDrawer, Shift
 from app.models.catalog import Category, Product, ProductVariant
 from app.models.inventory import Inventory
@@ -318,3 +319,4 @@ def test_stock_adjustment(client, seed_data):
     )
     assert adjust_res.status_code == 200
     assert adjust_res.json()["data"]["quantity"] == 35 # 20 + 15 = 35
+

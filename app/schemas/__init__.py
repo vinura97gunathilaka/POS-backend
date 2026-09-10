@@ -1,6 +1,7 @@
 from app.schemas.response import APIResponse
-from app.schemas.auth.auth import Token, TokenPayload, LoginPayload, ForgotPasswordPayload, ResetPasswordPayload
-from app.schemas.auth.rbac import AuditBase, CompanyBase, CompanyCreate, CompanyUpdate, CompanyOut, BranchBase, BranchCreate, BranchUpdate, BranchOut, UserBase, UserCreate, UserUpdate, UserOut, RoleBase, RoleCreate, RoleUpdate, RoleOut, PermissionBase, PermissionCreate, PermissionOut
+from app.schemas.auth import Token, TokenPayload, LoginPayload, ForgotPasswordPayload, ResetPasswordPayload
+from app.schemas.auth import AuditBase, UserBase, UserCreate, UserUpdate, UserOut, RoleBase, RoleCreate, RoleUpdate, RoleOut, RolePermissionAssign, UserRoleAssign, PermissionBase, PermissionCreate, PermissionUpdate, PermissionOut
+from app.schemas.organization import CompanyBase, CompanyCreate, CompanyUpdate, CompanyOut, BranchBase, BranchCreate, BranchUpdate, BranchOut
 from app.schemas.catalog.catalog import CategoryCreate, CategoryOut, ProductCreate, ProductOut, ProductVariantCreate, ProductVariantOut
 from app.schemas.sales.sales import SaleCreate, SaleUpdate, SaleOut, SaleItemCreate, SaleItemOut, PaymentCreate, PaymentOut
 from app.schemas.inventory.inventory import InventoryOut, StockTransactionOut, StockTransferCreate, StockTransferOut, StockAdjustmentPayload

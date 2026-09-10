@@ -2,7 +2,7 @@ from typing import Optional, List, Dict
 from decimal import Decimal
 from datetime import datetime
 from pydantic import BaseModel
-from app.schemas.rbac import AuditBase
+from app.schemas.auth import AuditBase
 from app.schemas.catalog import ProductVariantOut
 
 # --- Inventory ---
@@ -67,3 +67,4 @@ class StockAdjustmentPayload(BaseModel):
     quantity: int # positive for in, negative for out
     type: str # adjustment, damage, expired
     notes: Optional[str] = None
+

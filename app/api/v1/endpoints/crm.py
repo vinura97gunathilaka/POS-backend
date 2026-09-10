@@ -5,7 +5,7 @@ from sqlalchemy.sql import func
 
 from app.core.database import get_db
 from app.api.deps import get_current_user
-from app.models.rbac import User
+from app.models.auth import User
 from app.models.crm import Customer, Supplier, LoyaltyRule, LoyaltyTransaction
 from app.schemas.crm import (
     CustomerCreate, CustomerUpdate, CustomerOut,
@@ -152,3 +152,4 @@ def list_loyalty_transactions(
 
     transactions = db.query(LoyaltyTransaction).filter(LoyaltyTransaction.customer_id == customer_id).all()
     return APIResponse(data=transactions)
+

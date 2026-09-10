@@ -2,7 +2,7 @@ from typing import Optional, List
 from decimal import Decimal
 from datetime import datetime
 from pydantic import BaseModel
-from app.schemas.rbac import AuditBase
+from app.schemas.auth import AuditBase
 from app.schemas.crm import SupplierOut
 from app.schemas.catalog import ProductVariantOut
 
@@ -80,3 +80,4 @@ class GRNOut(GRNBase, AuditBase):
     total_amount: Decimal
     items: List[GRNItemOut] = []
     supplier: Optional[SupplierOut] = None
+

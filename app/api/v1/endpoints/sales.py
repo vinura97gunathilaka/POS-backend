@@ -11,7 +11,8 @@ import json
 
 from app.core.database import get_db
 from app.api.deps import get_current_user
-from app.models.rbac import User, Company
+from app.models.auth import User
+from app.models.organization import Company
 from app.models.catalog import ProductVariant
 from app.models.crm import Customer, LoyaltyTransaction, LoyaltyRule
 from app.models.inventory import Inventory, StockTransaction
@@ -118,7 +119,7 @@ def checkout(
 
 
     # Build Sale
-    from app.models.rbac import Company
+    from app.models.organization import Company
     company = db.query(Company).filter(Company.id == payload.company_id).first()
     enable_kds = False
     enable_recipe = False
@@ -368,7 +369,7 @@ def cancel_sale(
     if not sale:
         raise HTTPException(status_code=404, detail="Sale invoice not found")
     
-    from app.models.rbac import Company
+    from app.models.organization import Company
     company = db.query(Company).filter(Company.id == sale.company_id).first()
     enable_recipe = False
     if company and company.settings:
@@ -673,5 +674,6 @@ def submit_receipt_feedback(
     db.refresh(feedback)
     
     return APIResponse(data={"message": "Feedback submitted successfully", "id": feedback.id})
+
 
 

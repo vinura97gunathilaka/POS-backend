@@ -28,7 +28,7 @@ from app.core.security import (
     create_refresh_token,
 )
 from app.repositories.user_repository import UserRepository, CompanyRepository, BranchRepository, RoleRepository
-from app.models.rbac import User
+from app.models.auth import User
 
 logger = get_logger(__name__)
 
@@ -83,7 +83,7 @@ class AuthService:
         Seed the database with a default company, branch, and superadmin user
         if they don't already exist. Idempotent — safe to call multiple times.
         """
-        from app.models.rbac import Company, Branch, User
+        from app.models.organization import Company, Branch, User
 
         # Check if already seeded
         existing = self.user_repo.get_by_email("admin@smartpos.com")
@@ -133,3 +133,4 @@ class AuthService:
             "company_id": company.id,
             "branch_id": branch.id,
         }
+

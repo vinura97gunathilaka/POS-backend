@@ -2,7 +2,7 @@ from typing import Optional
 from decimal import Decimal
 from datetime import datetime
 from pydantic import BaseModel
-from app.schemas.rbac import AuditBase
+from app.schemas.auth import AuditBase
 
 # --- Expense Category ---
 class ExpenseCategoryBase(BaseModel):
@@ -95,3 +95,4 @@ class ShiftOut(AuditBase):
     actual_cash: Decimal
     variance: Decimal
     notes: Optional[str] = None
+

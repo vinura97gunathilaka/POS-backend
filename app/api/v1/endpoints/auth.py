@@ -6,19 +6,41 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import verify_password, create_access_token, create_refresh_token, get_password_hash
 from app.api.deps import get_current_user
-from app.models.rbac import User, Company, Branch
+from app.models.auth import User
+from app.models.organization import Company, Branch
 from app.schemas.auth import Token, ForgotPasswordPayload, ResetPasswordPayload
-from app.schemas.rbac import UserOut
+from app.schemas.auth import UserOut
 from app.schemas.response import APIResponse
 
 router = APIRouter()
+
+def build_token_response(user: User) -> Token:
+    roles = [role.name for role in user.roles]
+    permissions_set = set()
+    for role in user.roles:
+        for perm in role.permissions:
+            permissions_set.add(perm.code.upper())
+    
+    access_token = create_access_token(subject=user.id)
+    refresh_token = create_refresh_token(subject=user.id)
+    
+    return Token(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user_id=user.id,
+        name=user.name,
+        email=user.email,
+        is_superadmin=user.is_superadmin,
+        company_id=user.company_id,
+        roles=roles,
+        permissions=list(permissions_set)
+    )
 
 @router.post("/login", response_model=APIResponse[Token])
 def login(
     db: Session = Depends(get_db),
     form_data: OAuth2PasswordRequestForm = Depends()
 ):
-    # Retrieve user
     user = db.query(User).filter(User.email == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
@@ -31,11 +53,8 @@ def login(
             detail="Inactive user account"
         )
 
-    access_token = create_access_token(subject=user.id)
-    refresh_token = create_refresh_token(subject=user.id)
-    return APIResponse(
-        data=Token(access_token=access_token, refresh_token=refresh_token)
-    )
+    token_data = build_token_response(user)
+    return APIResponse(data=token_data)
 
 @router.post("/refresh", response_model=APIResponse[Token])
 def refresh_token(
@@ -75,11 +94,8 @@ def refresh_token(
             detail="User is inactive or not found",
         )
 
-    new_access = create_access_token(subject=user.id)
-    new_refresh = create_refresh_token(subject=user.id)
-    return APIResponse(
-        data=Token(access_token=new_access, refresh_token=new_refresh)
-    )
+    token_data = build_token_response(user)
+    return APIResponse(data=token_data)
 
 @router.get("/me", response_model=APIResponse[UserOut])
 def get_me(response: Response, current_user: User = Depends(get_current_user)):
@@ -88,30 +104,21 @@ def get_me(response: Response, current_user: User = Depends(get_current_user)):
 
 @router.post("/forgot-password", response_model=APIResponse[str])
 def forgot_password(payload: ForgotPasswordPayload, db: Session = Depends(get_db)):
-    # Check if user exists
     user = db.query(User).filter(User.email == payload.email).first()
     if not user:
-        # Avoid user enumeration attacks, return success but don't do anything
         return APIResponse(data="Password reset link sent to registered email if exists.")
-    
-    # In a real app, send email with a secure token.
-    # Here we mock it.
     return APIResponse(data="Password reset link sent to registered email if exists.")
 
 @router.post("/reset-password", response_model=APIResponse[str])
 def reset_password(payload: ResetPasswordPayload, db: Session = Depends(get_db)):
-    # Validate token and reset password. Mocked here.
     return APIResponse(data="Password has been reset successfully.")
 
-# Setup initial admin route to help testing
 @router.post("/setup-initial-admin", response_model=APIResponse[dict])
 def setup_initial_admin(db: Session = Depends(get_db)):
-    # Check if any user exists
     user_exists = db.query(User).first()
     if user_exists:
         return APIResponse(success=False, error="Setup already completed. User database is not empty.")
     
-    # Create company
     company = Company(
         name="Smart POS Corp",
         logo_url="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d",
@@ -123,7 +130,6 @@ def setup_initial_admin(db: Session = Depends(get_db)):
     db.add(company)
     db.flush()
 
-    # Create branch
     branch = Branch(
         company_id=company.id,
         name="Head Office Branch",
@@ -134,7 +140,6 @@ def setup_initial_admin(db: Session = Depends(get_db)):
     db.add(branch)
     db.flush()
 
-    # Create user
     user = User(
         company_id=company.id,
         name="Super Administrator",
@@ -147,10 +152,11 @@ def setup_initial_admin(db: Session = Depends(get_db)):
     db.add(user)
     db.flush()
 
-    # Connect user to branch
     user.branches.append(branch)
 
-    # Operational defaults setup
+    from app.api.v1.endpoints.users import seed_company_permissions_and_roles
+    seed_company_permissions_and_roles(db, company.id, user.id)
+
     from app.models.finance import CashDrawer, BankAccount
     from app.models.crm import LoyaltyRule
 
@@ -185,7 +191,6 @@ def setup_initial_admin(db: Session = Depends(get_db)):
 
     db.commit()
 
-
     return APIResponse(
         data={
             "message": "Initial seed complete. Use email admin@smartpos.com and password admin123 to log in.",
@@ -194,3 +199,4 @@ def setup_initial_admin(db: Session = Depends(get_db)):
             "user_id": user.id
         }
     )
+

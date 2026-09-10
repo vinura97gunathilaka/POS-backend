@@ -5,7 +5,8 @@ from sqlalchemy.sql import func
 
 from app.core.database import get_db
 from app.api.deps import get_current_user
-from app.models.rbac import User, Branch
+from app.models.auth import User
+from app.models.organization import Branch
 from app.models.catalog import ProductVariant
 from app.models.inventory import Inventory, StockTransaction, StockTransfer, StockTransferItem
 from app.schemas.inventory import (
@@ -260,3 +261,4 @@ def update_transfer_status(
     db.commit()
     db.refresh(transfer)
     return APIResponse(data=transfer)
+

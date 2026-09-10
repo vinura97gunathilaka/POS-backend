@@ -1,6 +1,6 @@
 from typing import Optional, Any
 from pydantic import BaseModel
-from app.schemas.rbac import AuditBase
+from app.schemas.auth import AuditBase
 
 class NotificationOut(AuditBase):
     company_id: int
@@ -26,4 +26,5 @@ class NotificationDispatchOut(AuditBase):
     recipient: str
     dispatch_status: str
     error_message: Optional[str] = None
+
 

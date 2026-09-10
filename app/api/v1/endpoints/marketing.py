@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from app.core.database import get_db
 from app.api.deps import get_current_user
-from app.models.rbac import User
+from app.models.auth import User
 from app.models.marketing import Promotion, Voucher
 from app.schemas.response import APIResponse
 
@@ -184,3 +184,4 @@ def create_voucher(
     db.commit()
     db.refresh(voucher)
     return APIResponse(data={"id": voucher.id, "code": voucher.code})
+

@@ -1,6 +1,7 @@
 import sys
 from app.core.database import SessionLocal
-from app.models.rbac import Company, User, Branch
+from app.models.auth import User
+from app.models.organization import Company, Branch
 from app.models.sales import Sale
 from app.models.logging import NotificationDispatch
 from app.schemas.sales import ReceiptDispatchPayload
@@ -84,3 +85,4 @@ def run_tests():
 if __name__ == "__main__":
     success = run_tests()
     sys.exit(0 if success else 1)
+

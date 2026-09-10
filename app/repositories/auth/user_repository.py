@@ -8,7 +8,8 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 
 from app.repositories.base_repository import BaseRepository
-from app.models.rbac import User, Role, Permission, Company, Branch
+from app.models.auth import User, Role, Permission
+from app.models.organization import Company, Branch
 
 
 class UserRepository(BaseRepository[User]):
@@ -73,3 +74,4 @@ class BranchRepository(BaseRepository[Branch]):
             .filter(Branch.company_id == company_id, Branch.status == "active")
             .all()
         )
+

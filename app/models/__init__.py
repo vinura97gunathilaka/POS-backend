@@ -1,6 +1,7 @@
 from app.core.database import Base
 from app.models.base import AuditMixin, CompanyAuditMixin, BranchAuditMixin
-from app.models.auth.rbac import User, Role, Permission, Company, Branch, UserRole, RolePermission
+from app.models.organization import Company, Branch
+from app.models.auth import User, Role, Permission, UserRole, RolePermission, user_branches
 from app.models.catalog.catalog import Category, Product, ProductVariant, ProductVariantComponent
 from app.models.sales.sales import Sale, SaleItem, Payment
 from app.models.inventory.inventory import Inventory, StockTransaction, StockTransfer, StockTransferItem

@@ -1,7 +1,8 @@
 import sys
 from decimal import Decimal
 from app.core.database import SessionLocal
-from app.models.rbac import Company, User, Branch
+from app.models.auth import User
+from app.models.organization import Company, Branch
 from app.models.sales import Sale, SaleItem, Payment
 from app.models.catalog import Product, ProductVariant, ProductVariantComponent
 from app.models.inventory import Inventory, StockTransaction
@@ -310,3 +311,4 @@ def run_tests():
 if __name__ == "__main__":
     success = run_tests()
     sys.exit(0 if success else 1)
+

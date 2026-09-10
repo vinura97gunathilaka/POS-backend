@@ -5,8 +5,9 @@ from sqlalchemy.sql import func
 
 from app.core.database import get_db
 from app.api.deps import get_current_user
-from app.models.rbac import Branch, User
-from app.schemas.rbac import BranchCreate, BranchUpdate, BranchOut
+from app.models.auth import User
+from app.models.organization import Branch
+from app.schemas.organization import BranchCreate, BranchUpdate, BranchOut
 from app.schemas.response import APIResponse
 
 router = APIRouter()
@@ -89,3 +90,4 @@ def delete_branch(
     branch.updated_by = current_user.id
     db.commit()
     return APIResponse(data="Branch deactivated successfully.")
+

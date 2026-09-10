@@ -5,7 +5,8 @@ from sqlalchemy.sql import func
 
 from app.core.database import get_db
 from app.api.deps import get_current_user
-from app.models.rbac import User, Branch
+from app.models.auth import User
+from app.models.organization import Branch
 from app.models.catalog import Category, Product, ProductVariant, ProductVariantComponent
 from app.models.inventory import Inventory
 from app.schemas.catalog import (
@@ -252,4 +253,5 @@ def get_variant_recipe(
         raise HTTPException(status_code=403, detail="Access denied")
 
     return APIResponse(data=variant.recipe_components)
+
 

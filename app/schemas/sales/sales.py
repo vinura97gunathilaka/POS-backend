@@ -2,7 +2,8 @@ from typing import Optional, List
 from decimal import Decimal
 from datetime import datetime
 from pydantic import BaseModel
-from app.schemas.rbac import AuditBase, CompanyOut, BranchOut
+from app.schemas.auth import AuditBase
+from app.schemas.organization import CompanyOut, BranchOut
 from app.schemas.catalog import ProductVariantOut
 
 # --- Sale Item ---
@@ -101,6 +102,7 @@ class SaleOut(SaleBase, AuditBase):
 class ReceiptDispatchPayload(BaseModel):
     type: str  # "email" or "whatsapp"
     recipient: str
+
 
 
 

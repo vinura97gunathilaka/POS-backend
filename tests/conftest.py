@@ -79,7 +79,7 @@ def client(db: Session) -> TestClient:
 @pytest.fixture()
 def seeded_admin(db: Session):
     """Seed a superadmin user + company + branch and return the user object."""
-    from app.models.rbac import Company, Branch, User
+    from app.models.organization import Company, Branch, User
 
     company = Company(name="Test Corp", email="test@corp.com", status="active")
     db.add(company)
@@ -108,3 +108,4 @@ def auth_headers(seeded_admin) -> dict:
     """Return Bearer auth headers for the seeded admin user."""
     token = create_access_token(subject=seeded_admin.id)
     return {"Authorization": f"Bearer {token}"}
+
