@@ -1,0 +1,7 @@
+"""
+Smart POS Backend
+XerexLabs — Enterprise SaaS POS Platform
+"""
+
+__version__ = "1.0.0"
+__author__ = "XerexLabs"
