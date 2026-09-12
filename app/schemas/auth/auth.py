@@ -7,9 +7,11 @@ class Token(BaseModel):
     token_type: str = "bearer"
     user_id: int
     name: str
-    email: str
+    email: Optional[str] = None
+    employee_id: Optional[str] = None
     is_superadmin: bool
-    company_id: int
+    must_change_password: bool = False
+    company_id: Optional[int] = None
     roles: List[str] = []
     permissions: List[str] = []
 
@@ -19,7 +21,7 @@ class TokenPayload(BaseModel):
     company_id: Optional[int] = None
 
 class LoginPayload(BaseModel):
-    username: EmailStr
+    username: str
     password: str
 
 class ForgotPasswordPayload(BaseModel):
@@ -27,4 +29,8 @@ class ForgotPasswordPayload(BaseModel):
 
 class ResetPasswordPayload(BaseModel):
     token: str
+    new_password: str
+
+class ChangeInitialPasswordPayload(BaseModel):
+    current_password: str
     new_password: str

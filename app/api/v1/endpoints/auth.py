@@ -8,8 +8,7 @@ from app.core.security import verify_password, create_access_token, create_refre
 from app.api.deps import get_current_user
 from app.models.auth import User
 from app.models.organization import Company, Branch
-from app.schemas.auth import Token, ForgotPasswordPayload, ResetPasswordPayload
-from app.schemas.auth import UserOut
+from app.schemas.auth import Token, ForgotPasswordPayload, ResetPasswordPayload, ChangeInitialPasswordPayload, UserOut
 from app.schemas.response import APIResponse
 
 router = APIRouter()
@@ -30,7 +29,9 @@ def build_token_response(user: User) -> Token:
         user_id=user.id,
         name=user.name,
         email=user.email,
+        employee_id=user.employee_id,
         is_superadmin=user.is_superadmin,
+        must_change_password=user.must_change_password,
         company_id=user.company_id,
         roles=roles,
         permissions=list(permissions_set)
@@ -41,20 +42,48 @@ def login(
     db: Session = Depends(get_db),
     form_data: OAuth2PasswordRequestForm = Depends()
 ):
-    user = db.query(User).filter(User.email == form_data.username).first()
+    login_id = form_data.username.strip() if form_data.username else ""
+    user = db.query(User).filter(
+        (User.email == login_id) | 
+        (User.nic == login_id) | 
+        (User.employee_id == login_id)
+    ).first()
+
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="Incorrect credentials (email, NIC, employee ID or password)",
         )
     if user.status != "active":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user account"
         )
+    if not user.has_system_access:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="System access has not been granted for this employee. Please contact your company administrator."
+        )
 
     token_data = build_token_response(user)
-    return APIResponse(data=token_data)
+    return APIResponse(data=token_data, message="Login successful")
+
+@router.post("/change-initial-password", response_model=APIResponse[str])
+def change_initial_password(
+    payload: ChangeInitialPasswordPayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password does not match."
+        )
+    
+    current_user.hashed_password = get_password_hash(payload.new_password)
+    current_user.must_change_password = False
+    db.commit()
+    return APIResponse(data="Password updated successfully", message="Initial password updated successfully.")
 
 @router.post("/refresh", response_model=APIResponse[Token])
 def refresh_token(

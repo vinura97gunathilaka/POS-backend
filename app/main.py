@@ -6,7 +6,7 @@ from app.core.exceptions import setup_exception_handlers
 from app.core.logging import configure_logging, get_logger
 from app.api.v1.api import api_router
 
-from app.core.database import engine
+from app.core.database import engine, run_auto_migrations
 from app.models import Base
 
 logger = get_logger(__name__)
@@ -25,6 +25,11 @@ def on_startup():
     configure_logging()
     logger.info("Smart POS API starting up — environment ready")
     Base.metadata.create_all(bind=engine)
+    try:
+        run_auto_migrations(engine)
+        logger.info("Auto migrations executed successfully")
+    except Exception as e:
+        logger.warning(f"Auto migration note: {e}")
     logger.info("Database tables verified / created")
 
 

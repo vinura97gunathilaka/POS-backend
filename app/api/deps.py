@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Generator, List
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -42,7 +43,31 @@ def get_current_user(
         raise HTTPException(status_code=404, detail="User not found")
     if user.status != "active":
         raise HTTPException(status_code=400, detail="Inactive user account")
+    
+    # Check tenant company subscription status if user belongs to a company and is not SuperAdmin
+    if not user.is_superadmin and user.company:
+        if user.company.status not in ["active", "trial"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Company account is currently {user.company.status}. Please contact support.",
+            )
+        if user.company.subscription_expires_at and user.company.subscription_expires_at < datetime.utcnow():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Company subscription has expired. Please renew your plan.",
+            )
+
     return user
+
+def get_current_superadmin(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    if not current_user.is_superadmin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Platform Super Administrator privilege required",
+        )
+    return current_user
 
 class PermissionChecker:
     def __init__(self, required_permission: str):

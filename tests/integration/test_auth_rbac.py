@@ -161,3 +161,76 @@ def test_role_based_access_control_permission_denied(client):
         headers=limited_headers
     )
     assert unauthorized_res.status_code == 403
+
+def test_company_onboarding_and_subscription_flow(client):
+    client.post("/api/v1/auth/setup-initial-admin")
+
+    login_res = client.post(
+        "/api/v1/auth/login",
+        data={"username": "admin@smartpos.com", "password": "admin123"}
+    )
+    token = login_res.json()["data"]["access_token"]
+    super_headers = {"Authorization": f"Bearer {token}"}
+
+    # 1. Onboard new Tenant Company with max_users limit of 1
+    onboard_res = client.post(
+        "/api/v1/companies/onboard",
+        json={
+            "company_name": "Test Retail Corp",
+            "admin_name": "Tenant Owner",
+            "admin_email": "owner@testretail.com",
+            "admin_password": "ownerpassword123",
+            "subscription_plan": "starter",
+            "max_users": 1
+        },
+        headers=super_headers
+    )
+    assert onboard_res.status_code == 200
+    onboard_data = onboard_res.json()
+    assert onboard_data["success"] is True
+    assert "onboarded successfully" in onboard_data["message"]
+    company_id = onboard_data["data"]["id"]
+
+    # 2. Login as Tenant Owner and verify primary branch assignment
+    owner_login = client.post(
+        "/api/v1/auth/login",
+        data={"username": "owner@testretail.com", "password": "ownerpassword123"}
+    )
+    assert owner_login.status_code == 200
+    owner_token = owner_login.json()["data"]["access_token"]
+    owner_headers = {"Authorization": f"Bearer {owner_token}"}
+
+    me_res = client.get("/api/v1/auth/me", headers=owner_headers)
+    assert me_res.status_code == 200
+    user_branches = me_res.json()["data"]["branches"]
+    assert len(user_branches) == 1
+    assert user_branches[0]["name"] == "Main Branch"
+
+    # 3. Tenant owner attempts to create a 2nd user (violates max_users=1 limit)
+    quota_err_res = client.post(
+        "/api/v1/users",
+        json={
+            "company_id": company_id,
+            "name": "Second User",
+            "email": "second@testretail.com",
+            "password": "userpassword123"
+        },
+        headers=owner_headers
+    )
+    assert quota_err_res.status_code == 400
+    assert "limit reached" in quota_err_res.json()["error"]
+
+    # 4. Super Admin suspends the tenant company
+    sub_res = client.patch(
+        f"/api/v1/companies/{company_id}/subscription",
+        json={"status": "suspended"},
+        headers=super_headers
+    )
+    assert sub_res.status_code == 200
+    assert sub_res.json()["data"]["status"] == "suspended"
+
+    # 5. Suspended tenant owner tries to access API -> blocked with 403
+    blocked_res = client.get("/api/v1/auth/me", headers=owner_headers)
+    assert blocked_res.status_code == 403
+    assert "suspended" in blocked_res.json()["error"]
+

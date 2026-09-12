@@ -6,7 +6,7 @@ from sqlalchemy.sql import func
 from app.core.database import get_db
 from app.api.deps import get_current_user
 from app.models.auth import User
-from app.models.organization import Branch
+from app.models.organization import Branch, Company
 from app.schemas.organization import BranchCreate, BranchUpdate, BranchOut
 from app.schemas.response import APIResponse
 
@@ -21,7 +21,7 @@ def list_branches(
     if not current_user.is_superadmin:
         query = query.filter(Branch.company_id == current_user.company_id)
     branches = query.all()
-    return APIResponse(data=branches)
+    return APIResponse(data=branches, message="Branches retrieved successfully")
 
 @router.post("/", response_model=APIResponse[BranchOut])
 def create_branch(
@@ -29,16 +29,28 @@ def create_branch(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    target_company_id = payload.company_id if current_user.is_superadmin else current_user.company_id
     if not current_user.is_superadmin and current_user.company_id != payload.company_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot create branches for another company"
         )
+    
+    if target_company_id:
+        company = db.query(Company).filter(Company.id == target_company_id).first()
+        if company and company.max_branches:
+            current_branch_count = db.query(Branch).filter(Branch.company_id == target_company_id, Branch.deleted_at == None).count()
+            if current_branch_count >= company.max_branches:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Company branch limit reached ({company.max_branches} branches max on '{company.subscription_plan}' plan). Upgrade plan to create more branches."
+                )
+
     branch = Branch(**payload.dict(), created_by=current_user.id)
     db.add(branch)
     db.commit()
     db.refresh(branch)
-    return APIResponse(data=branch)
+    return APIResponse(data=branch, message=f"Branch '{branch.name}' created successfully")
 
 @router.get("/{id}", response_model=APIResponse[BranchOut])
 def get_branch(
