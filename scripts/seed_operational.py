@@ -4,6 +4,9 @@ from app.models.rbac import Company, Branch
 from app.models.finance import CashDrawer, BankAccount
 from app.models.crm import LoyaltyRule
 
+def seed_operational():
+    seed()
+
 def seed():
     db = SessionLocal()
     try:

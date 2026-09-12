@@ -43,6 +43,39 @@ def run_auto_migrations(target_engine):
                 conn.execute(text("ALTER TABLE user_roles ALTER COLUMN company_id DROP NOT NULL;"))
             except Exception:
                 pass
+
+            # Audit logs table auto-migration
+            audit_cols = [
+                "branch_id INTEGER",
+                "user_name VARCHAR(255)",
+                "user_email VARCHAR(255)",
+                "model_name VARCHAR(100)",
+                "record_id VARCHAR(100)",
+                "old_data JSON",
+                "new_data JSON",
+                "changes JSON",
+                "user_agent VARCHAR(500)",
+                "endpoint VARCHAR(255)",
+                "http_method VARCHAR(20)",
+                "status_code INTEGER"
+            ]
+            for acol in audit_cols:
+                try:
+                    conn.execute(text(f"ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS {acol};"))
+                except Exception:
+                    pass
+            try:
+                conn.execute(text("ALTER TABLE audit_logs ALTER COLUMN company_id DROP NOT NULL;"))
+            except Exception:
+                pass
+            try:
+                conn.execute(text("ALTER TABLE audit_logs ALTER COLUMN action TYPE VARCHAR(100);"))
+            except Exception:
+                pass
+            try:
+                conn.execute(text("ALTER TABLE audit_logs ALTER COLUMN ip_address TYPE VARCHAR(100);"))
+            except Exception:
+                pass
         else:
             for col_def in [
                 "status VARCHAR(50) DEFAULT 'active'",
@@ -66,6 +99,24 @@ def run_auto_migrations(target_engine):
                     conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_def};"))
                 except Exception:
                     pass
+            for acol in [
+                "branch_id INTEGER",
+                "user_name VARCHAR(255)",
+                "user_email VARCHAR(255)",
+                "model_name VARCHAR(100)",
+                "record_id VARCHAR(100)",
+                "old_data JSON",
+                "new_data JSON",
+                "changes JSON",
+                "user_agent VARCHAR(500)",
+                "endpoint VARCHAR(255)",
+                "http_method VARCHAR(20)",
+                "status_code INTEGER"
+            ]:
+                try:
+                    conn.execute(text(f"ALTER TABLE audit_logs ADD COLUMN {acol};"))
+                except Exception:
+                    pass
 
 def get_db() -> Generator:
     db = SessionLocal()
@@ -73,3 +124,8 @@ def get_db() -> Generator:
         yield db
     finally:
         db.close()
+
+# Automatically register change data capture audit listeners for all sessions
+from app.core.audit_listener import register_audit_listeners
+register_audit_listeners(SessionLocal)
+

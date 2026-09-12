@@ -1,14 +1,9 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from app.models.base import CompanyAuditMixin
-
-user_branches = Table(
-    "user_branches",
-    Base.metadata,
-    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
-    Column("branch_id", Integer, ForeignKey("branches.id", ondelete="CASCADE"), primary_key=True)
-)
+from app.models.auth.user_branch import user_branches
+from app.models.auth.user_role import UserRole
 
 class User(Base, CompanyAuditMixin):
     __tablename__ = "users"
@@ -29,9 +24,4 @@ class User(Base, CompanyAuditMixin):
     roles = relationship("Role", secondary="user_roles", back_populates="users")
     branches = relationship("Branch", secondary=user_branches, back_populates="users")
 
-class UserRole(Base, CompanyAuditMixin):
-    __tablename__ = "user_roles"
-
-    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    role_id = Column(Integer, ForeignKey("roles.id", ondelete="CASCADE"), nullable=False, index=True)
+__all__ = ["User", "UserRole", "user_branches"]

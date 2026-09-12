@@ -4,6 +4,9 @@ from app.core.database import SessionLocal
 from app.models.rbac import Company
 from app.models.marketing import Promotion, Voucher
 
+def seed_marketing():
+    seed_marketing_data()
+
 def seed_marketing_data():
     db = SessionLocal()
     try:

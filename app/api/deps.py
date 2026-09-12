@@ -57,6 +57,15 @@ def get_current_user(
                 detail="Company subscription has expired. Please renew your plan.",
             )
 
+    # Enrich audit context with authenticated operator details
+    from app.core.audit_context import set_audit_context
+    set_audit_context(
+        user_id=user.id,
+        user_name=user.name,
+        user_email=user.email,
+        company_id=user.company_id
+    )
+
     return user
 
 def get_current_superadmin(

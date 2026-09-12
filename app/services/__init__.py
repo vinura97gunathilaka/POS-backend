@@ -7,3 +7,19 @@ from app.services.finance.finance_service import FinanceService
 from app.services.procurement.procurement_service import ProcurementService
 from app.services.marketing.marketing_service import MarketingService
 from app.services.analytics.analytics_service import AnalyticsService
+from app.services.logging.audit_service import AuditService
+from app.services.logging.notification_service import NotificationService
+
+__all__ = [
+    "AuthService",
+    "CatalogService",
+    "SalesService",
+    "InventoryService",
+    "CRMService",
+    "FinanceService",
+    "ProcurementService",
+    "MarketingService",
+    "AnalyticsService",
+    "AuditService",
+    "NotificationService",
+]

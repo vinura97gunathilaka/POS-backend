@@ -1,5 +1,5 @@
 from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -10,6 +10,7 @@ from app.models.auth import User
 from app.models.organization import Company, Branch
 from app.schemas.auth import Token, ForgotPasswordPayload, ResetPasswordPayload, ChangeInitialPasswordPayload, UserOut
 from app.schemas.response import APIResponse
+from app.services.audit_service import AuditService
 
 router = APIRouter()
 
@@ -39,6 +40,7 @@ def build_token_response(user: User) -> Token:
 
 @router.post("/login", response_model=APIResponse[Token])
 def login(
+    request: Request,
     db: Session = Depends(get_db),
     form_data: OAuth2PasswordRequestForm = Depends()
 ):
@@ -50,26 +52,31 @@ def login(
     ).first()
 
     if not user or not verify_password(form_data.password, user.hashed_password):
+        AuditService.log_login_failure(db, login_id, request, reason="Incorrect credentials")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect credentials (email, NIC, employee ID or password)",
         )
     if user.status != "active":
+        AuditService.log_login_failure(db, login_id, request, reason="Inactive user account")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user account"
         )
     if not user.has_system_access:
+        AuditService.log_login_failure(db, login_id, request, reason="No system access granted")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="System access has not been granted for this employee. Please contact your company administrator."
         )
 
+    AuditService.log_login_success(db, user, request)
     token_data = build_token_response(user)
     return APIResponse(data=token_data, message="Login successful")
 
 @router.post("/change-initial-password", response_model=APIResponse[str])
 def change_initial_password(
+    request: Request,
     payload: ChangeInitialPasswordPayload,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -83,6 +90,7 @@ def change_initial_password(
     current_user.hashed_password = get_password_hash(payload.new_password)
     current_user.must_change_password = False
     db.commit()
+    AuditService.log_password_change(db, current_user, request)
     return APIResponse(data="Password updated successfully", message="Initial password updated successfully.")
 
 @router.post("/refresh", response_model=APIResponse[Token])
