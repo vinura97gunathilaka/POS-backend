@@ -1,3 +1,5 @@
+from fastapi.staticfiles import StaticFiles
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -91,6 +93,12 @@ if settings.BACKEND_CORS_ORIGINS:
 
 # Set global exception handlers
 setup_exception_handlers(app)
+
+
+# Mount local media storage for uploaded attachments (fallback when S3 is in local mode)
+media_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "media")
+os.makedirs(media_path, exist_ok=True)
+app.mount("/media", StaticFiles(directory=media_path), name="media")
 
 # Include core routers
 app.include_router(api_router, prefix=settings.API_V1_STR)

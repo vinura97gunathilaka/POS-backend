@@ -27,6 +27,11 @@ SYSTEM_PERMISSIONS = [
     {"name": "Delete Role", "code": "DELETE_ROLE", "description": "Remove custom company roles"},
     {"name": "Assign Permissions", "code": "ASSIGN_PERMISSIONS", "description": "Assign or revoke permissions from roles"},
 
+    {"name": "Create Branch", "code": "CREATE_BRANCH", "description": "Create new store branch locations"},
+    {"name": "View Branches", "code": "VIEW_BRANCH", "description": "View store branch locations"},
+    {"name": "Update Branch", "code": "UPDATE_BRANCH", "description": "Modify branch settings, address, and details"},
+    {"name": "Delete Branch", "code": "DELETE_BRANCH", "description": "Deactivate or archive branch locations"},
+
     {"name": "Create Order", "code": "CREATE_ORDER", "description": "Create new dine-in, takeaway or delivery orders"},
     {"name": "View Orders", "code": "VIEW_ORDER", "description": "View active and historic customer orders"},
     {"name": "Checkout Order", "code": "CHECKOUT_ORDER", "description": "Process payments and print receipts"},
@@ -55,12 +60,12 @@ STANDARD_ROLES = [
     {
         "name": "Company Admin",
         "description": "Full administrative control for all company operations, branches, and staff",
-        "permissions": ["CREATE_USER", "VIEW_USER", "UPDATE_USER", "DELETE_USER", "CREATE_ROLE", "VIEW_ROLE", "UPDATE_ROLE", "DELETE_ROLE", "ASSIGN_PERMISSIONS", "CREATE_ORDER", "VIEW_ORDER", "CHECKOUT_ORDER", "HOLD_ORDER", "CANCEL_ORDER", "VIEW_KITCHEN", "UPDATE_KITCHEN_STATUS", "VIEW_INVENTORY", "MANAGE_INVENTORY", "VIEW_RECIPE", "MANAGE_RECIPE", "VIEW_PROCUREMENT", "CREATE_GRN", "MANAGE_SUPPLIER", "VIEW_REPORTS", "EXPORT_REPORTS", "MANAGE_FINANCE", "VIEW_AUDIT_LOGS"]
+        "permissions": ["CREATE_USER", "VIEW_USER", "UPDATE_USER", "DELETE_USER", "CREATE_ROLE", "VIEW_ROLE", "UPDATE_ROLE", "DELETE_ROLE", "ASSIGN_PERMISSIONS", "CREATE_BRANCH", "VIEW_BRANCH", "UPDATE_BRANCH", "DELETE_BRANCH", "CREATE_ORDER", "VIEW_ORDER", "CHECKOUT_ORDER", "HOLD_ORDER", "CANCEL_ORDER", "VIEW_KITCHEN", "UPDATE_KITCHEN_STATUS", "VIEW_INVENTORY", "MANAGE_INVENTORY", "VIEW_RECIPE", "MANAGE_RECIPE", "VIEW_PROCUREMENT", "CREATE_GRN", "MANAGE_SUPPLIER", "VIEW_REPORTS", "EXPORT_REPORTS", "MANAGE_FINANCE", "VIEW_AUDIT_LOGS"]
     },
     {
         "name": "Branch Manager",
         "description": "Manages branch staff, inventory, shifts, procurement, and daily order operations",
-        "permissions": ["CREATE_USER", "VIEW_USER", "UPDATE_USER", "CREATE_ORDER", "VIEW_ORDER", "CHECKOUT_ORDER", "HOLD_ORDER", "CANCEL_ORDER", "VIEW_KITCHEN", "UPDATE_KITCHEN_STATUS", "VIEW_INVENTORY", "MANAGE_INVENTORY", "VIEW_RECIPE", "MANAGE_RECIPE", "VIEW_PROCUREMENT", "CREATE_GRN", "MANAGE_SUPPLIER", "VIEW_REPORTS", "EXPORT_REPORTS", "MANAGE_FINANCE", "VIEW_AUDIT_LOGS"]
+        "permissions": ["CREATE_USER", "VIEW_USER", "UPDATE_USER", "VIEW_BRANCH", "CREATE_ORDER", "VIEW_ORDER", "CHECKOUT_ORDER", "HOLD_ORDER", "CANCEL_ORDER", "VIEW_KITCHEN", "UPDATE_KITCHEN_STATUS", "VIEW_INVENTORY", "MANAGE_INVENTORY", "VIEW_RECIPE", "MANAGE_RECIPE", "VIEW_PROCUREMENT", "CREATE_GRN", "MANAGE_SUPPLIER", "VIEW_REPORTS", "EXPORT_REPORTS", "MANAGE_FINANCE", "VIEW_AUDIT_LOGS"]
     },
     {
         "name": "Cashier",
@@ -115,6 +120,19 @@ def seed_company_permissions_and_roles(db: Session, company_id: Optional[int], u
             role_map[r["name"]] = role
             for p_code in r["permissions"]:
                 if p_code in perm_map:
+                    rp = RolePermission(
+                        company_id=company_id,
+                        role_id=role.id,
+                        permission_id=perm_map[p_code].id,
+                        created_by=user_id
+                    )
+                    db.add(rp)
+        else:
+            role = role_map[r["name"]]
+            existing_rps = db.query(RolePermission).filter(RolePermission.role_id == role.id).all()
+            assigned_ids = {rp.permission_id for rp in existing_rps}
+            for p_code in r["permissions"]:
+                if p_code in perm_map and perm_map[p_code].id not in assigned_ids:
                     rp = RolePermission(
                         company_id=company_id,
                         role_id=role.id,

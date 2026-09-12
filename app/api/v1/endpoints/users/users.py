@@ -18,6 +18,13 @@ from app.schemas.response import APIResponse
 
 router = APIRouter()
 
+from app.schemas.auth.user import ResetPasswordPayload
+from app.services.logging.audit_service import AuditService
+from app.core.config import settings
+
+DEFAULT_USER_PASSWORD = settings.DEFAULT_USER_PASSWORD
+
+
 # ============================================================================
 #  USERS CRUD ENDPOINTS
 # ============================================================================
@@ -95,7 +102,8 @@ def create_user(
 
     # 4. System access and password logic
     has_access = payload.has_system_access
-    raw_password = payload.password if payload.password else f"Pass#{emp_id}"
+    is_custom_pwd = bool(payload.password and payload.password.strip())
+    raw_password = payload.password.strip() if is_custom_pwd else DEFAULT_USER_PASSWORD
     hashed_pwd = get_password_hash(raw_password)
 
     user = User(
@@ -139,7 +147,7 @@ def create_user(
     db.commit()
     db.refresh(user)
     
-    msg_suffix = f" (Default password: '{raw_password}')" if has_access and not payload.password else ""
+    msg_suffix = f" (Default password: '{DEFAULT_USER_PASSWORD}')" if has_access and not is_custom_pwd else ""
     return APIResponse(
         data=user, 
         message=f"Employee '{user.name}' ({user.employee_id}) created successfully.{msg_suffix}"
@@ -235,3 +243,54 @@ def assign_user_roles(
     db.commit()
     db.refresh(user)
     return APIResponse(data=user)
+
+
+@router.post("/{id}/reset-password", response_model=APIResponse[UserOut])
+def reset_user_password(
+    id: int,
+    payload: Optional[ResetPasswordPayload] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("UPDATE_USER"))
+):
+    user = db.query(User).filter(User.id == id, User.deleted_at == None).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not current_user.is_superadmin and user.company_id != current_user.company_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    is_custom = bool(payload and payload.password and payload.password.strip())
+    raw_password = payload.password.strip() if is_custom else DEFAULT_USER_PASSWORD
+
+    user.hashed_password = get_password_hash(raw_password)
+    user.must_change_password = True
+    user.updated_by = current_user.id
+
+    try:
+        AuditService.log_action(
+            db,
+            action="RESET_PASSWORD",
+            company_id=user.company_id,
+            user_id=current_user.id,
+            user_name=current_user.name,
+            model_name="User",
+            record_id=str(user.id),
+            new_data={
+                "target_employee_id": user.employee_id,
+                "target_name": user.name,
+                "is_default_password": not is_custom,
+                "must_change_password": True
+            },
+            commit=False
+        )
+    except Exception:
+        pass
+
+    db.commit()
+    db.refresh(user)
+
+    display_pwd = f"'{raw_password}'" if not is_custom else "the specified custom password"
+    return APIResponse(
+        data=user,
+        message=f"Password for employee '{user.name}' ({user.employee_id}) has been reset to {display_pwd}. User must change password upon next login."
+    )

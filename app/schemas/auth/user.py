@@ -58,3 +58,7 @@ class UserOut(UserBase, AuditBase):
     company: Optional[CompanyOut] = None
     roles: List[RoleOut] = []
     branches: List[BranchOut] = []
+
+
+class ResetPasswordPayload(BaseModel):
+    password: Optional[str] = None

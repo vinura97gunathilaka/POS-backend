@@ -24,6 +24,18 @@ class Settings(BaseSettings):
     # Redis
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
+    # Host and Security
+    BACKEND_URL: str = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
+    DEFAULT_USER_PASSWORD: str = os.getenv("DEFAULT_USER_PASSWORD", "Smartpos@12345")
+
+    # AWS S3 Cloud Storage Settings
+    AWS_ACCESS_KEY_ID: Optional[str] = os.getenv("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY: Optional[str] = os.getenv("AWS_SECRET_ACCESS_KEY")
+    AWS_REGION: str = os.getenv("AWS_REGION", "us-east-1")
+    AWS_S3_BUCKET_NAME: Optional[str] = os.getenv("AWS_S3_BUCKET_NAME")
+    AWS_S3_CUSTOM_DOMAIN: Optional[str] = os.getenv("AWS_S3_CUSTOM_DOMAIN")
+    AWS_S3_ENDPOINT_URL: Optional[str] = os.getenv("AWS_S3_ENDPOINT_URL")
+
     # CORS Origins
     BACKEND_CORS_ORIGINS: List[str] = [
         "http://localhost:3000",

@@ -123,7 +123,7 @@ class BaseRepository(Generic[ModelT]):
 
     def delete(self, id: int) -> bool:
         """
-        Hard-delete a record by primary key.
+        Delete a record by primary key (soft-deletes if model supports deleted_at).
 
         Returns:
             True if deleted, False if record was not found.
@@ -131,6 +131,13 @@ class BaseRepository(Generic[ModelT]):
         obj = self.get(id)
         if obj is None:
             return False
+        if hasattr(obj, "deleted_at"):
+            from datetime import datetime, timezone
+            if hasattr(obj, "status"):
+                obj.status = "deleted"  # type: ignore[attr-defined]
+            obj.deleted_at = datetime.now(timezone.utc)  # type: ignore[attr-defined]
+            self.db.commit()
+            return True
         self.db.delete(obj)
         self.db.commit()
         return True

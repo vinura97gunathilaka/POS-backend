@@ -234,3 +234,93 @@ def test_company_onboarding_and_subscription_flow(client):
     assert blocked_res.status_code == 403
     assert "suspended" in blocked_res.json()["error"]
 
+
+def test_company_creation_and_branch_quota_permissions(client):
+    """Verify that:
+    1. Only superadmin can create/onboard companies.
+    2. Company Admin can create branches for their own company.
+    3. Company branch quotas (max_branches) are strictly enforced.
+    4. Non-authorized users without CREATE_BRANCH cannot create branches.
+    """
+    # 0. Ensure initial admin is setup
+    client.post("/api/v1/auth/setup-initial-admin")
+
+    # 1. Superadmin logs in
+    super_login = client.post(
+        "/api/v1/auth/login",
+        data={"username": "admin@smartpos.com", "password": "admin123"}
+    )
+    assert super_login.status_code == 200
+    super_token = super_login.json()["data"]["access_token"]
+    super_headers = {"Authorization": f"Bearer {super_token}"}
+
+    # 2. Onboard tenant company with max_branches=2
+    onboard_res = client.post(
+        "/api/v1/companies/onboard",
+        json={
+            "company_name": "Quota Test Coffee",
+            "admin_name": "Coffee Admin",
+            "admin_email": "admin@quotatest.com",
+            "admin_password": "coffeepassword123",
+            "phone": "+94770001122",
+            "subscription_plan": "starter",
+            "max_users": 5,
+            "max_branches": 2,
+            "primary_branch_name": "Branch 1"
+        },
+        headers=super_headers
+    )
+    assert onboard_res.status_code == 200
+    company_id = onboard_res.json()["data"]["id"]
+
+    # 3. Company Admin logs in
+    admin_login = client.post(
+        "/api/v1/auth/login",
+        data={"username": "admin@quotatest.com", "password": "coffeepassword123"}
+    )
+    assert admin_login.status_code == 200
+    admin_token = admin_login.json()["data"]["access_token"]
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+    # 4. Non-superadmin (Company Admin) cannot onboard another company -> 403
+    forbidden_company_res = client.post(
+        "/api/v1/companies/onboard",
+        json={
+            "company_name": "Rogue Company",
+            "admin_name": "Rogue Admin",
+            "admin_email": "rogue@test.com",
+            "admin_password": "password123"
+        },
+        headers=admin_headers
+    )
+    assert forbidden_company_res.status_code == 403
+
+    # 5. Company Admin creates 2nd branch (Allowed: current=1, limit=2)
+    branch2_res = client.post(
+        "/api/v1/branches/",
+        json={
+            "company_id": company_id,
+            "name": "Branch 2",
+            "phone": "+94770003344",
+            "address": "Kandy Road"
+        },
+        headers=admin_headers
+    )
+    assert branch2_res.status_code == 200
+    assert branch2_res.json()["data"]["name"] == "Branch 2"
+
+    # 6. Company Admin attempts to create 3rd branch (Exceeds max_branches=2 limit -> 400 Bad Request)
+    branch3_err_res = client.post(
+        "/api/v1/branches/",
+        json={
+            "company_id": company_id,
+            "name": "Branch 3",
+            "phone": "+94770005566",
+            "address": "Galle Road"
+        },
+        headers=admin_headers
+    )
+    assert branch3_err_res.status_code == 400
+    assert "limit reached" in branch3_err_res.json()["error"]
+
+

@@ -12,6 +12,7 @@ class Branch(Base, CompanyAuditMixin):
     phone = Column(String(50), nullable=True)
     email = Column(String(100), nullable=True)
     manager_id = Column(Integer, nullable=True)
+    logo_url = Column(String(500), nullable=True)
 
     company = relationship("Company", back_populates="branches")
     users = relationship("User", secondary="user_branches", back_populates="branches")

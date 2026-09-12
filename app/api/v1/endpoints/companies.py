@@ -1,12 +1,15 @@
-from typing import List
+﻿from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
+from sqlalchemy.sql import func
 
 from app.core.database import get_db
 from app.core.security import get_password_hash
+from app.core.config import settings
 from app.api.deps import get_current_user, get_current_superadmin
-from app.models.auth import User, Role
-from app.models.organization import Company
+from app.models.auth import User, Role, UserRole
+from app.models.organization import Company, Branch
+from app.api.v1.endpoints.users import seed_company_permissions_and_roles
 from app.schemas.organization import (
     CompanyCreate, 
     CompanyUpdate, 
@@ -23,7 +26,10 @@ def list_companies(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_superadmin)
 ):
-    companies = db.query(Company).filter(Company.deleted_at == None).all()
+    companies = db.query(Company).filter(Company.deleted_at == None).order_by(Company.id.desc()).all()
+    for c in companies:
+        c.branches_count = db.query(Branch).filter(Branch.company_id == c.id, Branch.deleted_at == None).count()
+        c.users_count = db.query(User).filter(User.company_id == c.id, User.deleted_at == None).count()
     return APIResponse(data=companies, message="Companies retrieved successfully")
 
 @router.post("/", response_model=APIResponse[CompanyOut])
@@ -37,10 +43,6 @@ def create_company(
     db.commit()
     db.refresh(company)
     return APIResponse(data=company, message="Company created successfully")
-
-from app.models.auth import User, Role, UserRole
-from app.models.organization import Company, Branch
-from app.api.v1.endpoints.users import seed_company_permissions_and_roles
 
 @router.post("/onboard", response_model=APIResponse[CompanyOut])
 def onboard_company(
@@ -59,6 +61,7 @@ def onboard_company(
     # 1. Create Tenant Company
     company = Company(
         name=payload.company_name,
+        logo_url=payload.logo_url,
         phone=payload.phone,
         subscription_plan=payload.subscription_plan or "pro",
         max_users=payload.max_users,
@@ -80,7 +83,8 @@ def onboard_company(
     db.flush()
 
     # 3. Create Primary Company Admin User & Register under Primary Branch
-    hashed_pwd = get_password_hash(payload.admin_password)
+    raw_admin_pwd = (payload.admin_password or '').strip() or settings.DEFAULT_USER_PASSWORD
+    hashed_pwd = get_password_hash(raw_admin_pwd)
     admin_user = User(
         company_id=company.id,
         employee_id=f"EMP-{company.id}-0001",
@@ -179,3 +183,36 @@ def update_company_subscription(
         message=f"Subscription for '{company.name}' updated successfully (Status: {company.status}, Plan: {company.subscription_plan})"
     )
 
+@router.delete("/{id}", response_model=APIResponse[str])
+def delete_company(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superadmin)
+):
+    company = db.query(Company).filter(Company.id == id, Company.deleted_at == None).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+
+    company.deleted_at = func.now()
+    company.status = "archived"
+    company.updated_by = current_user.id
+
+    # Cascade soft delete all branches of this company
+    db.query(Branch).filter(Branch.company_id == id, Branch.deleted_at == None).update({
+        Branch.deleted_at: func.now(),
+        Branch.status: "archived",
+        Branch.updated_by: current_user.id
+    }, synchronize_session=False)
+
+    # Cascade soft delete all users of this company (excluding global superadmins)
+    db.query(User).filter(User.company_id == id, User.is_superadmin == False, User.deleted_at == None).update({
+        User.deleted_at: func.now(),
+        User.status: "inactive",
+        User.updated_by: current_user.id
+    }, synchronize_session=False)
+
+    db.commit()
+    return APIResponse(
+        data="Company and associated resources soft-deleted successfully.",
+        message=f"Tenant company '{company.name}' and its branches have been archived safely."
+    )

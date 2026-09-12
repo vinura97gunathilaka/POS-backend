@@ -76,6 +76,10 @@ def run_auto_migrations(target_engine):
                 conn.execute(text("ALTER TABLE audit_logs ALTER COLUMN ip_address TYPE VARCHAR(100);"))
             except Exception:
                 pass
+            try:
+                conn.execute(text("ALTER TABLE branches ADD COLUMN IF NOT EXISTS logo_url VARCHAR(500);"))
+            except Exception:
+                pass
         else:
             for col_def in [
                 "status VARCHAR(50) DEFAULT 'active'",

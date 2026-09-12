@@ -361,20 +361,24 @@ def cancel_sale(
             earned_txn = db.query(LoyaltyTransaction).filter(
                 LoyaltyTransaction.customer_id == customer.id,
                 LoyaltyTransaction.reference_id == str(sale.id),
-                LoyaltyTransaction.type == "earn"
+                LoyaltyTransaction.type == "earn",
+                LoyaltyTransaction.deleted_at == None
             ).first()
             if earned_txn:
                 customer.points -= earned_txn.points
-                db.delete(earned_txn)
+                earned_txn.deleted_at = func.now()
+                earned_txn.deleted_by = current_user.id
 
             redeem_txn = db.query(LoyaltyTransaction).filter(
                 LoyaltyTransaction.customer_id == customer.id,
                 LoyaltyTransaction.reference_id == str(sale.id),
-                LoyaltyTransaction.type == "redeem"
+                LoyaltyTransaction.type == "redeem",
+                LoyaltyTransaction.deleted_at == None
             ).first()
             if redeem_txn:
                 customer.points += abs(redeem_txn.points)
-                db.delete(redeem_txn)
+                redeem_txn.deleted_at = func.now()
+                redeem_txn.deleted_by = current_user.id
 
     sale.sale_status = "cancelled"
     sale.payment_status = "refunded"
