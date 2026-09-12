@@ -239,7 +239,7 @@ def handle_after_flush(session: Session, flush_context: Any):
         audits_to_write = list(pending)
         pending.clear()
         try:
-            from app.models.logging.logging import AuditLog
+            from app.models.logging.audit_log import AuditLog
             conn = session.connection()
             conn.execute(AuditLog.__table__.insert(), audits_to_write)
         except Exception as e:

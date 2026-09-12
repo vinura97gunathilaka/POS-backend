@@ -2,7 +2,7 @@ import os
 import sys
 
 from app.core.database import SessionLocal
-from app.models.rbac import Company, Branch
+from app.models.organization import Company, Branch
 from app.models.catalog import ProductVariant
 from app.models.inventory import Inventory
 

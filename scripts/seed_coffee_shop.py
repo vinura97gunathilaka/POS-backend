@@ -1,7 +1,7 @@
 from decimal import Decimal
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
-from app.models.rbac import Company, Branch
+from app.models.organization import Company, Branch
 from app.models.catalog import Category, Product, ProductVariant
 from app.models.inventory import Inventory
 

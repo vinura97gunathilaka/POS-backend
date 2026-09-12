@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
 from app.core.database import SessionLocal
-from app.models.rbac import Company
+from app.models.organization import Company
 from app.models.marketing import Promotion, Voucher
 
 def seed_marketing():

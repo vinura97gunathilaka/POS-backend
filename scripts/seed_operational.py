@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
-from app.models.rbac import Company, Branch
+from app.models.organization import Company, Branch
 from app.models.finance import CashDrawer, BankAccount
 from app.models.crm import LoyaltyRule
 

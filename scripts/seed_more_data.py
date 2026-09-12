@@ -6,7 +6,8 @@ from decimal import Decimal
 
 # Add backend directory to Python path
 from app.core.database import SessionLocal
-from app.models.rbac import Company, Branch, User
+from app.models.organization import Company, Branch
+from app.models.auth import User
 from app.models.catalog import ProductVariant
 from app.models.crm import Customer, LoyaltyTransaction, LoyaltyRule
 from app.models.sales import Sale, SaleItem, Payment
