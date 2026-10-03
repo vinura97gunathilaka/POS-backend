@@ -91,6 +91,7 @@ def seed_company_permissions_and_roles(db: Session, company_id: Optional[int], u
     existing_perms = db.query(Permission).filter(Permission.company_id == company_id, Permission.deleted_at == None).all()
     perm_map = {p.code: p for p in existing_perms}
 
+    added_any_perm = False
     for p in SYSTEM_PERMISSIONS:
         if p["code"] not in perm_map:
             new_p = Permission(
@@ -101,12 +102,17 @@ def seed_company_permissions_and_roles(db: Session, company_id: Optional[int], u
                 created_by=user_id
             )
             db.add(new_p)
-            db.flush()
             perm_map[p["code"]] = new_p
+            added_any_perm = True
+
+    if added_any_perm:
+        db.flush()
 
     existing_roles = db.query(Role).filter(Role.company_id == company_id, Role.deleted_at == None).all()
     role_map = {r.name: r for r in existing_roles}
 
+    added_any_role = False
+    new_roles_with_perms = []
     for r in STANDARD_ROLES:
         if r["name"] not in role_map:
             role = Role(
@@ -116,17 +122,9 @@ def seed_company_permissions_and_roles(db: Session, company_id: Optional[int], u
                 created_by=user_id
             )
             db.add(role)
-            db.flush()
             role_map[r["name"]] = role
-            for p_code in r["permissions"]:
-                if p_code in perm_map:
-                    rp = RolePermission(
-                        company_id=company_id,
-                        role_id=role.id,
-                        permission_id=perm_map[p_code].id,
-                        created_by=user_id
-                    )
-                    db.add(rp)
+            new_roles_with_perms.append((role, r["permissions"]))
+            added_any_role = True
         else:
             role = role_map[r["name"]]
             existing_rps = db.query(RolePermission).filter(RolePermission.role_id == role.id).all()
@@ -141,7 +139,22 @@ def seed_company_permissions_and_roles(db: Session, company_id: Optional[int], u
                     )
                     db.add(rp)
 
+    if added_any_role:
+        db.flush()
+
+    for role, perms in new_roles_with_perms:
+        for p_code in perms:
+            if p_code in perm_map:
+                rp = RolePermission(
+                    company_id=company_id,
+                    role_id=role.id,
+                    permission_id=perm_map[p_code].id,
+                    created_by=user_id
+                )
+                db.add(rp)
+
     db.commit()
+
 
 
 # ============================================================================

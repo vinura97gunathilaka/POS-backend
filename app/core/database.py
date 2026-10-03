@@ -3,13 +3,34 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from app.core.config import settings
 
+# Engine connection parameters tailored for cloud & serverless databases (e.g. Neon, RDS, Supabase)
+is_postgres = "postgresql" in settings.DATABASE_URL or settings.DB_DRIVER == "postgresql"
+
+engine_kwargs = {
+    "pool_pre_ping": True,
+    "pool_recycle": 300,  # Proactively recycle connections before serverless idle timeout (5 min)
+}
+
+if is_postgres:
+    engine_kwargs.update({
+        "pool_size": 10,
+        "max_overflow": 10,
+        "connect_args": {
+            "connect_timeout": 10,
+            "keepalives": 1,
+            "keepalives_idle": 30,
+            "keepalives_interval": 10,
+            "keepalives_count": 5,
+        }
+    })
+else:
+    engine_kwargs.update({
+        "pool_size": 20,
+        "max_overflow": 10
+    })
+
 # Create engine
-engine = create_engine(
-    settings.DATABASE_URL,
-    pool_pre_ping=True,
-    pool_size=20,
-    max_overflow=10
-)
+engine = create_engine(settings.DATABASE_URL, **engine_kwargs)
 
 # Session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
